@@ -4,6 +4,14 @@ https://drive.google.com/drive/folders/1d-CyawFNhJvZeUy0kpHsm4JX44XBtM5q?usp=sha
 
 务必将这个分享目录`envs`复制到谷歌硬盘的根目录，方便用`./install <环境名>`快速恢复。
 
+在执行后续脚本前，务必先加载谷歌硬盘
+
+```python
+# 加载谷歌硬盘
+from google.colab import drive
+drive.mount('/content/drive')
+```
+
 # Gridap环境
 
 ```shell
