@@ -2,6 +2,8 @@
 
 https://drive.google.com/drive/folders/1d-CyawFNhJvZeUy0kpHsm4JX44XBtM5q?usp=sharing
 
+务必将这个分享目录`envs`复制到谷歌硬盘的根目录，方便用`./install <环境名>`快速恢复。
+
 # Gridap环境
 
 ```shell
