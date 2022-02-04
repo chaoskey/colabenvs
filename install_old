@@ -1,0 +1,133 @@
+#! /bin/bash
+
+start_time=$(date +%s)
+
+# 安装cmdstan
+if [ "$1"x = cmdstanx ]
+then
+    if [ -f /content/drive/MyDrive/envs/cmdstan-2.28.2.tar.gz ]
+    then
+        cp -f /content/drive/MyDrive/envs/cmdstan-2.28.2.tar.gz cmdstan-2.28.2.tar.gz 
+        mkdir -p /root/.cmdstan
+        tar -zxf cmdstan-2.28.2.tar.gz
+        mv cmdstan-2.28.2 /root/.cmdstan/cmdstan-2.28.2
+        rm -f cmdstan-2.28.2.tar.gz
+    else
+        # 安装cmdstan
+        pip3 install --upgrade cmdstanpy
+        install_cmdstan
+    fi
+    #import os
+    #os.environ['JULIA_CMDSTAN_HOME'] = '/root/.cmdstan/cmdstan-2.28.2'
+    #os.environ['CMDSTAN_HOME'] = '/root/.cmdstan/cmdstan-2.28.2'
+    echo "export JULIA_CMDSTAN_HOME=/root/.cmdstan/$(ls /root/.cmdstan)" >> /etc/profile
+    echo "export CMDSTAN_HOME=/root/.cmdstan/$(ls /root/.cmdstan)" >> /etc/profile
+    mkdir /etc/julia
+    # ENV["CMDSTAN_HOME"] = "/root/.cmdstan/cmdstan-2.28.2"
+    # ENV["JULIA_CMDSTAN_HOME"] = "/root/.cmdstan/cmdstan-2.28.2"
+    echo "ENV[\"JULIA_CMDSTAN_HOME\"]=\"/root/.cmdstan/$(ls /root/.cmdstan)\"" >> /etc/julia/startup.jl
+    echo "ENV[\"CMDSTAN_HOME\"]=\"/root/.cmdstan/$(ls /root/.cmdstan)\"" >> /etc/julia/startup.jl
+    cat /etc/profile
+    cat /etc/julia/startup.jl
+fi 
+
+# 安装julia
+if [ "$1"x = juliax ]
+then
+    # julia-1.6.5
+    curl -sSL "https://julialang-s3.julialang.org/bin/linux/x64/1.6/julia-1.6.5-linux-x86_64.tar.gz" -o julia.tar.gz
+    tar -xzf julia.tar.gz -C /usr --strip-components 1
+    rm -rf julia.tar.gz*
+
+    sysimage=""
+    if [ -f /content/drive/MyDrive/envs/SciMLSysimage.so ]
+    then
+        sysimage="SciMLSysimage.so"
+    fi
+    juliaPkg=""
+    if [ -f /content/drive/MyDrive/envs/sciml.tar.gz ]
+    then
+        juliaPkg="sciml.tar.gz"    
+    fi
+    if [ ! "$juliaPkg"x = x ]
+    then
+        # 恢复
+        cp -f /content/drive/MyDrive/envs/"$juliaPkg" /content/
+        tar -zxf "$juliaPkg"
+        mv .julia /root/.julia
+        cp -rf /content/drive/MyDrive/envs/kernels /root/.local/share/jupyter/kernels
+        rm "$juliaPkg"
+        julia -e 'using Pkg; Pkg.status()'
+        julia -e 'using Pkg; pkg"gc --all"'
+        ls /root/.julia
+        ls /root/.local/share/jupyter/kernels
+
+        if [ ! "$sysimage"x = x ]
+        then
+            # 恢复
+            cp -f /content/drive/MyDrive/envs/"$sysimage" /root/.julia/environments/v1.6/
+            cp -f /root/.local/share/jupyter/kernels/julia-1.6/kernel_sysimage.json /root/.local/share/jupyter/kernels/julia-1.6/kernel.json
+        fi
+
+    else
+        # 安装
+        julia -e 'using Pkg; Pkg.update(); Pkg.add(["IJulia", "PackageCompiler"]); Pkg.precompile()'
+    fi
+fi
+
+# Julia Build
+if [ "$1"x = buildx ]
+then
+    julia -e 'using Pkg; Pkg.precompile(); Pkg.build(); pkg"gc --all"; Pkg.status()'
+    julia -e 'ENV["CMDSTAN_HOME"] = "/root/.cmdstan/cmdstan-2.28.2"; ENV["JULIA_CMDSTAN_HOME"] = "/root/.cmdstan/cmdstan-2.28.2"; using DifferentialEquations, DiffEqPhysics, ParameterizedFunctions, NeuralPDE, Cuba, CmdStan, DiffEqParamEstim, AlgebraicMultigrid, SparsityDetection, DiffEqDevTools, Catalyst, DiffEqUncertainty, NLopt, DoubleFloats, Decimals, DecFP, Measurements, ArbNumerics'
+fi
+
+# 备份
+if [ "$1"x = backupx ]
+then
+    if [ ! -f /content/drive/MyDrive/envs/cmdstan-2.28.2.tar.gz ]
+    then
+        cp -rf /root/.cmdstan/cmdstan-2.28.2 cmdstan-2.28.2
+        tar -czf cmdstan-2.28.2.tar.gz cmdstan-2.28.2
+        mv cmdstan-2.28.2.tar.gz /content/drive/MyDrive/envs/cmdstan-2.28.2.tar.gz
+    fi
+
+    cp -rf /root/.julia .julia
+    tar -czf "$2".tar.gz .julia
+    mv /content/drive/MyDrive/envs/"$2".tar.gz /content/drive/MyDrive/envs/"$2".tar.gz_bak
+    cp "$2".tar.gz /content/drive/MyDrive/envs/
+    #rm -rdf /content/drive/MyDrive/envs/kernels
+    cp -rf /root/.local/share/jupyter/kernels /content/drive/MyDrive/envs/kernels
+    rm -rdf .julia
+    rm "$2".tar.gz
+fi
+
+# 添加Julia库
+if [ "$1"x = addx ]
+then
+    pkgs="${@:2:$#}"
+    pkgs='["'${pkgs// /'", "'}'"]'
+    cmd="julia -e 'using Pkg; Pkg.add("$pkgs"); Pkg.precompile(); Pkg.status()'"
+    eval $cmd
+    pkgs="${@:2:$#}"
+    pkgs=${pkgs// /', '}
+    cmd="julia -e 'using "$pkgs"'"
+    eval $cmd
+fi
+
+if [ "$1"x = sysimagex ]
+then
+    cd /root/.julia/environments/v1.6
+    pkgs="${@:3:$#}"
+    pkgs='["'${pkgs// /'", "'}'"]'
+    sysimage='"'$2'Sysimage.so"'
+    cmd="julia -e 'using PackageCompiler; create_sysimage("$pkgs"; sysimage_path="$sysimage")'"
+    eval $cmd
+    mv /content/drive/MyDrive/envs/SciMLSysimage.so /content/drive/MyDrive/envs/SciMLSysimage.so_bak 
+    cp -f /root/.julia/environments/v1.6/SciMLSysimage.so /content/drive/MyDrive/envs/
+fi
+
+end_time=$(date +%s)
+cost_time=$[ $end_time-$start_time ]
+echo "安装耗时: $(($cost_time/60))min $(($cost_time%60))s"
+

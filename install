@@ -1,0 +1,191 @@
+#! /bin/bash
+
+function InstallCmdStan() {
+    if [ -f /content/drive/MyDrive/envs/cmdstan-2.28.2.tar.gz ]
+    then
+        cp -f /content/drive/MyDrive/envs/cmdstan-2.28.2.tar.gz cmdstan-2.28.2.tar.gz 
+        mkdir -p /root/.cmdstan
+        tar -zxf cmdstan-2.28.2.tar.gz
+        mv cmdstan-2.28.2 /root/.cmdstan/cmdstan-2.28.2
+        rm -f cmdstan-2.28.2.tar.gz
+    else
+        # 安装cmdstan
+        # pip3 install --upgrade cmdstanpy # colab默认已经安装
+        install_cmdstan
+    fi
+    #import os
+    #os.environ['JULIA_CMDSTAN_HOME'] = '/root/.cmdstan/cmdstan-2.28.2'
+    #os.environ['CMDSTAN_HOME'] = '/root/.cmdstan/cmdstan-2.28.2'
+    echo "export JULIA_CMDSTAN_HOME=/root/.cmdstan/$(ls /root/.cmdstan)" >> /root/.bashrc
+    echo "export CMDSTAN_HOME=/root/.cmdstan/$(ls /root/.cmdstan)" >> /root/.bashrc
+    if [ ! -d /root/.julia/config ]
+    then
+        mkdir -p /root/.julia/config
+    fi
+    echo "ENV[\"JULIA_CMDSTAN_HOME\"]=\"/root/.cmdstan/$(ls /root/.cmdstan)\"" >> /root/.julia/config/startup.jl
+    echo "ENV[\"CMDSTAN_HOME\"]=\"/root/.cmdstan/$(ls /root/.cmdstan)\"" >> /root/.julia/config/startup.jl
+    cat /root/.bashrc
+    cat /root/.julia/config/startup.jl
+}
+
+start_time=$(date +%s)
+
+# 快速安装或恢复Julia+SciML环境库
+# !./install SciML
+# run(`./install SciML`)
+# 假设已经加载了谷歌硬盘，并已经存在目录/content/drive/MyDrive
+if [ ! "$1"x = x ] && [ "$2"x = x ]
+then
+    # 确保安装了Julia基本环境 julia-1.6.5 【测试通过】
+    cmd=$(which julia)
+    if [ "$cmd"x == x ]
+    then
+        curl -sSL "https://julialang-s3.julialang.org/bin/linux/x64/1.6/julia-1.6.5-linux-x86_64.tar.gz" -o julia.tar.gz
+        tar -xzf julia.tar.gz -C /usr --strip-components 1
+        rm -rf julia.tar.gz*
+    fi
+
+    # 准备备份目录 【测试通过】
+    if [ ! -d /content/drive/MyDrive/envs/"$1" ]
+    then
+        mkdir -p /content/drive/MyDrive/envs/"$1"
+    fi
+
+    # 恢复SciML环境或安装Julia基本库包
+    if [ ! -d /root/.julia ]
+    then
+        if [ -f /content/drive/MyDrive/envs/"$1"/"$1".tar.gz ]
+        then
+            # 恢复
+            cp -f /content/drive/MyDrive/envs/"$1"/"$1".tar.gz /content/
+            tar -zxf "$1".tar.gz
+            mv .julia /root/.julia
+            rm "$1".tar.gz
+            julia -e 'using Pkg; Pkg.status(); pkg"gc --all"'
+            ls /root/.julia
+
+            if [ -f /content/drive/MyDrive/envs/"$1"/"$1"Sysimage.so ]
+            then
+                # 恢复
+                cp -f /content/drive/MyDrive/envs/"$1"/"$1"Sysimage.so /root/.julia/environments/v1.6/
+                julia -e 'using IJulia; installkernel("Julia", "--sysimage=/root/.julia/environments/v1.6/'$1'Sysimage.so")'
+            fi
+        else
+            # 安装基本Julia库包 【测试通过】
+            julia -e 'using Pkg; Pkg.update(); Pkg.add(["IJulia", "PackageCompiler"]); Pkg.precompile()'
+        fi
+    fi
+
+    # 如果已经安装，但还没安装CmdStan
+    # 务必先安装CmdStan
+    cmd=$(julia -e 'using Pkg; Pkg.status()' | grep CmdStan)
+    if [ ! "$cmd"x == x ] && [ ! -d /root/.cmdstan/cmdstan-2.28.2 ]
+    then
+        InstallCmdStan
+    fi
+fi
+
+# 增量式安装Julia环境库
+# 在名为SciML环境下添加Julia库包（增量式安装）, 比如:
+# !./install SciML add SymbolicUtils Symbolics
+# run(`./install SciML add SciML DifferentialEquations Plots`)
+# SciMl
+# DifferentialEquations Plots BoundaryValueDiffEq DiffEqBase DiffEqCallbacks DiffEqPhysics OrdinaryDiffEq ParameterizedFunctions RecursiveArrayTools StochasticDiffEq ModelingToolkit SparseArrays SparseDiffTools Sundials SciMLBase Distributions Optim ForwardDiff StaticArrays Latexify NLsolve Unitful SymbolicUtils Symbolics LSODA NeuralPDE DiffEqFlux Flux CUDA DiffEqOperators KernelDensity DiffEqSensitivity Cuba Quadrature CmdStan DiffEqParamEstim AlgebraicMultigrid SparsityDetection BenchmarkTools DiffEqDevTools Catalyst DiffEqUncertainty NLopt DoubleFloats Decimals DecFP Measurements MCMCChains ArbNumerics Turing DynamicHMC TransformVariables DiffEqBayes DiffEqGPU StatsPlots
+# Gridap
+# Gridap add Gridap GridapGmsh GridapODEs ForwardDiff    
+if [ ! "$1"x = x ] && [ "$2"x = addx ]
+then
+    # 如果已经安装或即将安装，但还没安装CmdStan
+    # 务必先安装CmdStan
+    cmd1=$(echo ${@:3:$#} | grep CmdStan)
+    cmd2=$(julia -e 'using Pkg; Pkg.status()' | grep CmdStan)
+    if [ ! "$cmd1"x == x -o ! "$cmd2"x == x ] && [ ! -d /root/.cmdstan/cmdstan-2.28.2 ]
+    then
+        InstallCmdStan
+    fi
+
+    # 添加Julia库包, 并确保添加已经预编译
+    # 只添加没有的库
+    pkgs_all=$(julia -e 'using Pkg; Pkg.status()')
+    pkgs_add=""
+    for pkg in ${@:3:$#}
+    do
+        cmd=$(echo ${pkgs_all} | grep ${pkg})
+        if [ "$cmd"x == x ] 
+        then
+            pkgs_add=$pkgs_add" "${pkg}
+        fi
+    done
+    # 去掉前后空格
+    pkgs_add=$(echo ${pkgs_add} | awk '$1=$1')
+    # 正式添加
+    if [ ! "$pkgs_add"x == x ]
+    then
+
+        # 添加新库包
+        pkgs='["'${pkgs_add// /'", "'}'"]'
+        cmd="julia -e 'using Pkg; Pkg.add("$pkgs"); '"
+        eval $cmd
+        julia -e 'using Pkg; Pkg.precompile(); Pkg.build(); pkg"gc --all"; Pkg.status()'
+        pkgs=${pkgs_add// /', '}
+        cmd="julia -e 'using "$pkgs"'"
+        eval $cmd
+
+        # 增量式创建镜像
+        cd /root/.julia/environments/v1.6
+        pkgs='["'${pkgs_add// /'", "'}'"]'
+        sysimage='"'$1'Sysimage.so"'
+        cmd="julia -e 'using PackageCompiler; create_sysimage("$pkgs"; sysimage_path="$sysimage")'"
+        eval $cmd
+        cd /content/
+        julia -e 'using IJulia; installkernel("Julia", "--sysimage=/root/.julia/environments/v1.6/'$1'Sysimage.so")'
+    fi
+
+    # 确保所有库都被using过
+    #julia -e 'ENV["CMDSTAN_HOME"] = "/root/.cmdstan/cmdstan-2.28.2"; ENV["JULIA_CMDSTAN_HOME"] = "/root/.cmdstan/cmdstan-2.28.2"; using DifferentialEquations, DiffEqPhysics, ParameterizedFunctions, NeuralPDE, Cuba, CmdStan, DiffEqParamEstim, AlgebraicMultigrid, SparsityDetection, DiffEqDevTools, Catalyst, DiffEqUncertainty, NLopt, DoubleFloats, Decimals, DecFP, Measurements, ArbNumerics'
+
+    # cmdstan-2.28.2备份，因为安装编译更耗时
+    if [ ! -f /content/drive/MyDrive/envs/cmdstan-2.28.2.tar.gz ] && [ -d /root/.cmdstan/cmdstan-2.28.2 ]
+    then
+        cp -rf /root/.cmdstan/cmdstan-2.28.2 cmdstan-2.28.2
+        tar -czf cmdstan-2.28.2.tar.gz cmdstan-2.28.2
+        mv cmdstan-2.28.2.tar.gz /content/drive/MyDrive/envs/cmdstan-2.28.2.tar.gz
+    fi
+    
+    cp -rf /root/.julia .julia
+    if [ -f .julia/environments/v1.6/"$1"Sysimage.so ]
+    then
+        rm -f .julia/environments/v1.6/"$1"Sysimage.so
+    fi
+    tar -czf "$1".tar.gz .julia
+    if [ -f /content/drive/MyDrive/envs/"$1"/"$1".tar.gz ]
+    then
+        if [ -f /content/drive/MyDrive/envs/"$1"/"$1".tar.gz_bak ]
+        then
+            rm /content/drive/MyDrive/envs/"$1"/"$1".tar.gz     
+        else
+            mv /content/drive/MyDrive/envs/"$1"/"$1".tar.gz /content/drive/MyDrive/envs/"$1"/"$1".tar.gz_bak
+        fi
+    fi
+    cp "$1".tar.gz /content/drive/MyDrive/envs/"$1"/
+    rm -rdf .julia
+    rm "$1".tar.gz
+
+    # 备份镜像
+    if [ -f /content/drive/MyDrive/envs/"$1"/"$1"Sysimage.so ]
+    then
+        if [ -f /content/drive/MyDrive/envs/"$1"/"$1"Sysimage.so_bak ]
+        then
+            rm /content/drive/MyDrive/envs/"$1"/"$1"Sysimage.so     
+        else
+            mv /content/drive/MyDrive/envs/"$1"/"$1"Sysimage.so /content/drive/MyDrive/envs/"$1"/"$1"Sysimage.so_bak
+        fi
+    fi
+    cp -f /root/.julia/environments/v1.6/"$1"Sysimage.so /content/drive/MyDrive/envs/"$1"/
+    
+fi
+
+end_time=$(date +%s)
+cost_time=$[ $end_time-$start_time ]
+echo "安装耗时: $(($cost_time/60))min $(($cost_time%60))s"
+
