@@ -22,8 +22,12 @@ function InstallCmdStan() {
     then
         mkdir -p /root/.julia/config
     fi
-    echo "ENV[\"JULIA_CMDSTAN_HOME\"]=\"/root/.cmdstan/$(ls /root/.cmdstan)\"" >> /root/.julia/config/startup.jl
-    echo "ENV[\"CMDSTAN_HOME\"]=\"/root/.cmdstan/$(ls /root/.cmdstan)\"" >> /root/.julia/config/startup.jl
+    cmd=$(cat /root/.julia/config/startup.jl | grep CMDSTAN_HOME)
+    if [ "$cmd"x == x ]
+    then
+        echo "ENV[\"JULIA_CMDSTAN_HOME\"]=\"/root/.cmdstan/$(ls /root/.cmdstan)\"" >> /root/.julia/config/startup.jl
+        echo "ENV[\"CMDSTAN_HOME\"]=\"/root/.cmdstan/$(ls /root/.cmdstan)\"" >> /root/.julia/config/startup.jl
+    fi
     cat /root/.bashrc
     cat /root/.julia/config/startup.jl
 }
@@ -69,6 +73,8 @@ then
                 # 恢复
                 cp -f /content/drive/MyDrive/envs/"$1"/"$1"Sysimage.so /root/.julia/environments/v1.6/
                 julia -e 'using IJulia; installkernel("Julia", "--sysimage=/root/.julia/environments/v1.6/'$1'Sysimage.so")'
+            else
+                julia -e 'using IJulia; installkernel("Julia")'
             fi
         else
             # 安装基本Julia库包 【测试通过】
@@ -130,16 +136,17 @@ then
         pkgs=${pkgs_add// /', '}
         cmd="julia -e 'using "$pkgs"'"
         eval $cmd
-
-        # 增量式创建镜像
-        cd /root/.julia/environments/v1.6
-        pkgs='["'${pkgs_add// /'", "'}'"]'
-        sysimage='"'$1'Sysimage.so"'
-        cmd="julia -e 'using PackageCompiler; create_sysimage("$pkgs"; sysimage_path="$sysimage")'"
-        eval $cmd
-        cd /content/
-        julia -e 'using IJulia; installkernel("Julia", "--sysimage=/root/.julia/environments/v1.6/'$1'Sysimage.so")'
     fi
+
+    # 增量式创建镜像
+    cd /root/.julia/environments/v1.6
+    pkgs="${@:3:$#}"
+    pkgs='["'${pkgs// /'", "'}'"]'
+    sysimage='"'$1'Sysimage.so"'
+    cmd="julia -e 'using PackageCompiler; create_sysimage("$pkgs"; sysimage_path="$sysimage")'"
+    eval $cmd
+    cd /content/
+    julia -e 'using IJulia; installkernel("Julia", "--sysimage=/root/.julia/environments/v1.6/'$1'Sysimage.so")'
 
     # 确保所有库都被using过
     #julia -e 'ENV["CMDSTAN_HOME"] = "/root/.cmdstan/cmdstan-2.28.2"; ENV["JULIA_CMDSTAN_HOME"] = "/root/.cmdstan/cmdstan-2.28.2"; using DifferentialEquations, DiffEqPhysics, ParameterizedFunctions, NeuralPDE, Cuba, CmdStan, DiffEqParamEstim, AlgebraicMultigrid, SparsityDetection, DiffEqDevTools, Catalyst, DiffEqUncertainty, NLopt, DoubleFloats, Decimals, DecFP, Measurements, ArbNumerics'
