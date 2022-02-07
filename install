@@ -34,7 +34,10 @@ function InstallCmdStan() {
 
 start_time=$(date +%s)
 
-if [ "$1"x == FEniCSx ]
+if [ "$1"x == FEniCSxx ]
+then
+    echo "FEniCSx环境或脚本计划实现中 ... ... "
+elif [ "$1"x == FEniCSx ]
 then
     # FEniCS 需要 Python 3。为了构建需要CMake，建议使用pip。
     # 默认已有
@@ -109,9 +112,9 @@ then
             tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/fenics
             tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/dolfin
             tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/dolfin_utils
-            tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/fenics_dolfin-2019.1.0.dist-info
+            tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/fenics_dolfin*
             tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/mshr
-            tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/mshr-2019.1.0.dist-info
+            tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/mshr-*
             gzip fenics.tar
             if [ -e /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz ] && [ ! -e /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz_bak ] 
             then
