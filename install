@@ -34,11 +34,98 @@ function InstallCmdStan() {
 
 start_time=$(date +%s)
 
+if [ "$1"x == FEniCSx ]
+then
+    # FEniCS 需要 Python 3。为了构建需要CMake，建议使用pip。
+    # 默认已有
+
+    # 要构建 DOLFIN 和 mshr 的可选 Python 接口，需要pybind11，因为 version 2018.1.0. 要安装：
+    # 3s执行完成 所以无需备份
+    if [ ! -d /usr/local/include/pybind11 ]
+    then
+        PYBIND11_VERSION=2.2.3
+        wget -nc --quiet https://github.com/pybind/pybind11/archive/v${PYBIND11_VERSION}.tar.gz
+        tar -xf v${PYBIND11_VERSION}.tar.gz && cd pybind11-${PYBIND11_VERSION}
+        mkdir build && cd build && cmake -DPYBIND11_TEST=off .. && make install
+        cd /content/
+        rm v${PYBIND11_VERSION}.tar.gz 
+    fi
+
+    cmd=$(dpkg -l | grep eigen3)
+    if [ "$cmd"x = x ]
+    then
+        apt-get install libeigen3-dev libmpfr-dev libgmp-dev libboost-all-dev
+        pip3 install pkgconfig
+    fi
+
+    cmd=$(ls /usr/local/lib/python3.7/dist-packages | grep fenics_ffc)
+    if [ "$cmd"x = x ]
+    then
+        pip3 install fenics-ffc --upgrade
+    fi
+
+    if [ ! -e /content/drive/MyDrive/envs/FEniCS ]
+    then
+        mkdir -p /content/drive/MyDrive/envs/FEniCS
+    fi
+
+    if [ -e /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz ]
+    then
+
+        cp -f /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz /content/
+        tar -xzf fenics.tar.gz --strip-components=2 --directory=/usr/local
+
+        ln -fs /usr/local/lib/libdolfin*.so* /usr/lib
+        ln -fs /usr/local/lib/libmshr*.so* /usr/lib
+
+    else
+        FENICS_VERSION=$(python3 -c"import ffc; print(ffc.__version__)")
+
+        cmd=$(ls /usr/lib | grep libdolfin)
+        if [ "$cmd"x = x ]
+        then
+            # 14min 59s
+            git clone --branch=$FENICS_VERSION https://bitbucket.org/fenics-project/dolfin
+            mkdir dolfin/build && cd dolfin/build && cmake .. && make install && cd ../..
+            cd dolfin/python && pip3 install . && cd ../..
+
+            ln -fs /usr/local/lib/libdolfin*.so* /usr/lib
+        fi
+
+        cmd=$(ls /usr/lib | grep libmshr)
+        if [ "$cmd"x = x ]
+        then
+            git clone --branch=2019.1.0 https://bitbucket.org/fenics-project/mshr
+            mkdir mshr/build && cd mshr/build && cmake .. && make install && cd ../..
+            cd mshr/python && pip3 install . && cd ../..
+
+            ln -fs /usr/local/lib/libmshr*.so* /usr/lib
+        fi
+
+        if [ -e dolfin/build/install_manifest.txt ] && [ -e mshr/build/install_manifest.txt ] 
+        then
+            cat dolfin/build/install_manifest.txt | xargs tar -cf fenics.tar
+            cat mshr/build/install_manifest.txt | xargs tar -rf fenics.tar
+            tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/fenics
+            tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/dolfin
+            tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/dolfin_utils
+            tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/fenics_dolfin-2019.1.0.dist-info
+            tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/mshr
+            tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/mshr-2019.1.0.dist-info
+            gzip fenics.tar
+            if [ -e /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz ] && [ ! -e /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz_bak ] 
+            then
+                mv /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz_bak
+            fi
+            mv fenics.tar.gz /content/drive/MyDrive/envs/FEniCS
+        fi
+    fi
+
 # 快速安装或恢复Julia+SciML环境库
 # !./install SciML
 # run(`./install SciML`)
 # 假设已经加载了谷歌硬盘，并已经存在目录/content/drive/MyDrive
-if [ ! "$1"x = x ] && [ "$2"x = x ]
+elif [ ! "$1"x == x ] && [ "$2"x == x ]
 then
     # 确保安装了Julia基本环境 julia-1.6.5 【测试通过】
     cmd=$(which julia)
@@ -89,7 +176,6 @@ then
     then
         InstallCmdStan
     fi
-fi
 
 # 增量式安装Julia环境库
 # 在名为SciML环境下添加Julia库包（增量式安装）, 比如:
@@ -99,7 +185,7 @@ fi
 # DifferentialEquations Plots BoundaryValueDiffEq DiffEqBase DiffEqCallbacks DiffEqPhysics OrdinaryDiffEq ParameterizedFunctions RecursiveArrayTools StochasticDiffEq ModelingToolkit SparseArrays SparseDiffTools Sundials SciMLBase Distributions Optim ForwardDiff StaticArrays Latexify NLsolve Unitful SymbolicUtils Symbolics LSODA NeuralPDE DiffEqFlux Flux CUDA DiffEqOperators KernelDensity DiffEqSensitivity Cuba Quadrature CmdStan DiffEqParamEstim AlgebraicMultigrid SparsityDetection BenchmarkTools DiffEqDevTools Catalyst DiffEqUncertainty NLopt DoubleFloats Decimals DecFP Measurements MCMCChains ArbNumerics Turing DynamicHMC TransformVariables DiffEqBayes DiffEqGPU StatsPlots
 # Gridap
 # Gridap add Gridap GridapGmsh GridapODEs ForwardDiff    
-if [ ! "$1"x = x ] && [ "$2"x = addx ]
+elif [ ! "$1"x == x ] && [ "$2"x == addx ]
 then
     # 如果已经安装或即将安装，但还没安装CmdStan
     # 务必先安装CmdStan

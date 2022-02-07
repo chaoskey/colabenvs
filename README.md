@@ -15,7 +15,8 @@ drive.mount('/content/drive')
 !cp -p /content/drive/MyDrive/envs/install install
 !chmod +x install
 
-# 以SciMLGridap为例，安装或恢复环境
+# 如果有SciMLGridap环境备份，安装耗时大概2-4分钟
+# 如果没有SciMLGridap环境备份，详见 【SciML+Gridap环境】
 !./install SciMLGridap
 ```
 
@@ -42,10 +43,20 @@ drive.mount('/content/drive')
 # SciML+Gridap环境
 
 ```shell
-# 已构建环境的恢复
+# 如果有SciMLGridap环境备份，安装耗时大概2-4分钟
+# 如果没有SciMLGridap环境备份，执行完此步，务必执行下一步
 ./install SciMLGridap
 
+# 安装耗时大概30-40分钟
 # 在SciML基础上安装Gridap
 ./install SciMLGridap add DifferentialEquations Plots BoundaryValueDiffEq DiffEqBase DiffEqCallbacks DiffEqPhysics OrdinaryDiffEq ParameterizedFunctions RecursiveArrayTools StochasticDiffEq ModelingToolkit SparseArrays SparseDiffTools Sundials SciMLBase Distributions Optim ForwardDiff StaticArrays Latexify NLsolve Unitful SymbolicUtils Symbolics LSODA NeuralPDE DiffEqFlux Flux CUDA DiffEqOperators KernelDensity DiffEqSensitivity Cuba Quadrature CmdStan DiffEqParamEstim AlgebraicMultigrid SparsityDetection BenchmarkTools DiffEqDevTools Catalyst DiffEqUncertainty NLopt DoubleFloats Decimals DecFP Measurements MCMCChains ArbNumerics Turing DynamicHMC TransformVariables DiffEqBayes DiffEqGPU StatsPlots Gridap GridapGmsh GridapODEs ForwardDiff
+```
+
+# FEniCS环境
+
+```shell
+# 如果已有FEniCS环境备份，安装耗时大概20-30秒
+# 如果没有FEniCS环境备份，安装耗时大概15-20分钟
+./install FEniCS
 ```
 
