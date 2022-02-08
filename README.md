@@ -71,11 +71,14 @@ drive.mount('/content/drive')
 ./install FEniCSx real
 ./install FEniCSx complex
 
+# 1min 48s
 ./install firedrake real
 ./install firedrake complex
 
+# 0min 38s
 ./install gmsh
 
+# 1min 52s
 ./install ngsolve
 ```
 
