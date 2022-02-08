@@ -34,9 +34,30 @@ function InstallCmdStan() {
 
 start_time=$(date +%s)
 
-if [ "$1"x == FEniCSxx ]
+if [ "$1"x == ngsolvex ]
 then
-    echo "FEniCSx环境或脚本计划实现中 ... ... "
+    # 利用 https://fem-on-colab.github.io 的实现
+    wget "https://fem-on-colab.github.io/releases/ngsolve-install.sh" -O "/tmp/ngsolve-install.sh" && bash "/tmp/ngsolve-install.sh"
+elif [ "$1"x == gmshx ]
+then
+    # 利用 https://fem-on-colab.github.io 的实现
+    wget "https://fem-on-colab.github.io/releases/gmsh-install.sh" -O "/tmp/gmsh-install.sh" && bash "/tmp/gmsh-install.sh"
+elif [ "$1"x == firedrakex ] && [ "$2"x == realx -o "$2"x == x ]
+then
+    # 利用 https://fem-on-colab.github.io 的实现
+    wget "https://fem-on-colab.github.io/releases/firedrake-install-real.sh" -O "/tmp/firedrake-install.sh" && bash "/tmp/firedrake-install.sh"
+elif [ "$1"x == firedrakex ] && [ "$2"x == complexx ]
+then
+    # 利用 https://fem-on-colab.github.io 的实现
+    wget "https://fem-on-colab.github.io/releases/firedrake-install-complex.sh" -O "/tmp/firedrake-install.sh" && bash "/tmp/firedrake-install.sh"
+elif [ "$1"x == FEniCSxx ] && [ "$2"x == realx -o "$2"x == x ]
+then
+    # 利用 https://fem-on-colab.github.io 的实现
+    wget "https://fem-on-colab.github.io/releases/fenicsx-install-real.sh" -O "/tmp/fenicsx-install.sh" && bash "/tmp/fenicsx-install.sh"
+elif [ "$1"x == FEniCSxx ] && [ "$2"x == complexx ]
+then
+    # 利用 https://fem-on-colab.github.io 的实现
+    wget "https://fem-on-colab.github.io/releases/fenicsx-install-complex.sh" -O "/tmp/fenicsx-install.sh" && bash "/tmp/fenicsx-install.sh"
 elif [ "$1"x == FEniCSx ]
 then
     # FEniCS 需要 Python 3。为了构建需要CMake，建议使用pip。

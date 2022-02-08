@@ -60,3 +60,22 @@ drive.mount('/content/drive')
 ./install FEniCS
 ```
 
+# 其它的环境
+
+详见: https://fem-on-colab.github.io/packages.html
+
+我已将其集成为:
+
+```shell
+# 2min 5s
+./install FEniCSx real
+./install FEniCSx complex
+
+./install firedrake real
+./install firedrake complex
+
+./install gmsh
+
+./install ngsolve
+```
+
