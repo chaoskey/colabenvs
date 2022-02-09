@@ -34,150 +34,121 @@ function InstallCmdStan() {
 
 start_time=$(date +%s)
 
-if [ "$1"x == ngsolvex ]
+# 利用 https://fem-on-colab.github.io 的实现
+if [ "${1,,}"x = fenicsx ] || [ "${1,,}"x = fenicsxx ] || [ "${1,,}"x = firedrakex ] || [ "${1,,}"x = gmshx ] || [ "${1,,}"x = ngsolvex ]
 then
-    cmd=$(ls /usr/local/lib/python3.7/dist-packages | grep ngsolve)
-    if [ "$cmd"x == x ]
+    mode=${1,,}
+    mode=${mode/fenics/dolfin}
+    cmd=$(python3 -c"import "$mode"; print('"$mode"')")
+    if [ ! "$cmd"x = "$mode"x ]
     then
-        # 利用 https://fem-on-colab.github.io 的实现
-        wget "https://fem-on-colab.github.io/releases/ngsolve-install.sh" -O "/tmp/ngsolve-install.sh" && bash "/tmp/ngsolve-install.sh"
-    fi
-elif [ "$1"x == gmshx ]
-then
-    cmd=$(ls /usr/local/lib/python3.7/dist-packages | grep gmsh)
-    if [ "$cmd"x == x ]
-    then
-        # 利用 https://fem-on-colab.github.io 的实现
-        wget "https://fem-on-colab.github.io/releases/gmsh-install.sh" -O "/tmp/gmsh-install.sh" && bash "/tmp/gmsh-install.sh"
-    fi
-elif [ "$1"x == firedrakex ] && [ "$2"x == realx -o "$2"x == x ]
-then
-    cmd=$(ls /usr/local/lib/python3.7/dist-packages | grep firedrake)
-    if [ "$cmd"x == x ]
-    then
-        # 利用 https://fem-on-colab.github.io 的实现
-        wget "https://fem-on-colab.github.io/releases/firedrake-install-real.sh" -O "/tmp/firedrake-install.sh" && bash "/tmp/firedrake-install.sh"
-    fi
-elif [ "$1"x == firedrakex ] && [ "$2"x == complexx ]
-then
-    cmd=$(ls /usr/local/lib/python3.7/dist-packages | grep firedrake)
-    if [ "$cmd"x == x ]
-    then
-        # 利用 https://fem-on-colab.github.io 的实现
-        wget "https://fem-on-colab.github.io/releases/firedrake-install-complex.sh" -O "/tmp/firedrake-install.sh" && bash "/tmp/firedrake-install.sh"
-    fi
-elif [ "$1"x == FEniCSxx ] && [ "$2"x == realx -o "$2"x == x ]
-then
-    cmd=$(ls /usr/local/lib | grep dolfinx)
-    if [ "$cmd"x == x ]
-    then
-        # 利用 https://fem-on-colab.github.io 的实现
-        wget "https://fem-on-colab.github.io/releases/fenicsx-install-real.sh" -O "/tmp/fenicsx-install.sh" && bash "/tmp/fenicsx-install.sh"
-    fi
-elif [ "$1"x == FEniCSxx ] && [ "$2"x == complexx ]
-then
-    cmd=$(ls /usr/local/lib | grep dolfinx)
-    if [ "$cmd"x == x ]
-    then
-        # 利用 https://fem-on-colab.github.io 的实现
-        wget "https://fem-on-colab.github.io/releases/fenicsx-install-complex.sh" -O "/tmp/fenicsx-install.sh" && bash "/tmp/fenicsx-install.sh"
-    fi
-elif [ "$1"x == FEniCSx ]
-then
-    # FEniCS 需要 Python 3。为了构建需要CMake，建议使用pip。
-    # 默认已有
-
-    # 要构建 DOLFIN 和 mshr 的可选 Python 接口，需要pybind11，因为 version 2018.1.0. 要安装：
-    # 3s执行完成 所以无需备份
-    if [ ! -d /usr/local/include/pybind11 ]
-    then
-        PYBIND11_VERSION=2.2.3
-        wget -nc --quiet https://github.com/pybind/pybind11/archive/v${PYBIND11_VERSION}.tar.gz
-        tar -xf v${PYBIND11_VERSION}.tar.gz && cd pybind11-${PYBIND11_VERSION}
-        mkdir build && cd build && cmake -DPYBIND11_TEST=off .. && make install
-        cd /content/
-        rm v${PYBIND11_VERSION}.tar.gz 
-    fi
-
-    cmd=$(dpkg -l | grep eigen3)
-    if [ "$cmd"x = x ]
-    then
-        apt-get install libeigen3-dev libmpfr-dev libgmp-dev libboost-all-dev
-        pip3 install pkgconfig
-    fi
-
-    cmd=$(ls /usr/local/lib/python3.7/dist-packages | grep fenics_ffc)
-    if [ "$cmd"x = x ]
-    then
-        pip3 install fenics-ffc --upgrade
-    fi
-
-    if [ ! -e /content/drive/MyDrive/envs/FEniCS ]
-    then
-        mkdir -p /content/drive/MyDrive/envs/FEniCS
-    fi
-
-    if [ -e /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz ]
-    then
-
-        cp -f /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz /content/
-        tar -xzf fenics.tar.gz --strip-components=2 --directory=/usr/local
-
-        ln -fs /usr/local/lib/libdolfin*.so* /usr/lib
-        ln -fs /usr/local/lib/libmshr*.so* /usr/lib
-
-    else
-        FENICS_VERSION=$(python3 -c"import ffc; print(ffc.__version__)")
-
-        cmd=$(ls /usr/lib | grep libdolfin)
-        if [ "$cmd"x = x ]
+        type=""
+        if [ "${2,,}"x = realx ] || [ "${2,,}"x = complexx ]
         then
-            # 14min 59s
-            git clone --branch=$FENICS_VERSION https://bitbucket.org/fenics-project/dolfin
-            mkdir dolfin/build && cd dolfin/build && cmake .. && make install && cd ../..
-            cd dolfin/python && pip3 install . && cd ../..
-
-            ln -fs /usr/local/lib/libdolfin*.so* /usr/lib
+            type=-"${2,,}"
         fi
-
-        cmd=$(ls /usr/lib | grep libmshr)
-        if [ "$cmd"x = x ]
-        then
-            git clone --branch=2019.1.0 https://bitbucket.org/fenics-project/mshr
-            mkdir mshr/build && cd mshr/build && cmake .. && make install && cd ../..
-            cd mshr/python && pip3 install . && cd ../..
-
-            ln -fs /usr/local/lib/libmshr*.so* /usr/lib
-        fi
-
-        if [ -e dolfin/build/install_manifest.txt ] && [ -e mshr/build/install_manifest.txt ] 
-        then
-            cat dolfin/build/install_manifest.txt | xargs tar -cf fenics.tar
-            cat mshr/build/install_manifest.txt | xargs tar -rf fenics.tar
-            tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/fenics
-            tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/dolfin
-            tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/dolfin_utils
-            tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/fenics_dolfin*
-            tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/mshr
-            tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/mshr-*
-            gzip fenics.tar
-            if [ -e /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz ] && [ ! -e /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz_bak ] 
-            then
-                mv /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz_bak
-            fi
-            mv fenics.tar.gz /content/drive/MyDrive/envs/FEniCS
-        fi
+        echo -$1
+        echo -$mode
+        echo -$type
+        wget "https://fem-on-colab.github.io/releases/"${1,,}"-install"$type".sh" -O "/tmp/"${1,,}"-install.sh" && bash "/tmp/"${1,,}"-install.sh"
     fi
+# https://fem-on-colab.github.io 已实现，屏蔽这段代码
+# elif [ "$1"x == fenicsx ]
+# then
+#     # FEniCS 需要 Python 3。为了构建需要CMake，建议使用pip。
+#     # 默认已有
+
+#     # 要构建 DOLFIN 和 mshr 的可选 Python 接口，需要pybind11，因为 version 2018.1.0. 要安装：
+#     # 3s执行完成 所以无需备份
+#     if [ ! -d /usr/local/include/pybind11 ]
+#     then
+#         PYBIND11_VERSION=2.2.3
+#         wget -nc --quiet https://github.com/pybind/pybind11/archive/v${PYBIND11_VERSION}.tar.gz
+#         tar -xf v${PYBIND11_VERSION}.tar.gz && cd pybind11-${PYBIND11_VERSION}
+#         mkdir build && cd build && cmake -DPYBIND11_TEST=off .. && make install
+#         cd /content/
+#         rm v${PYBIND11_VERSION}.tar.gz 
+#     fi
+
+#     cmd=$(dpkg -l | grep eigen3)
+#     if [ "$cmd"x = x ]
+#     then
+#         apt-get install libeigen3-dev libmpfr-dev libgmp-dev libboost-all-dev
+#         pip3 install pkgconfig
+#     fi
+
+#     cmd=$(ls /usr/local/lib/python3.7/dist-packages | grep fenics_ffc)
+#     if [ "$cmd"x = x ]
+#     then
+#         pip3 install fenics-ffc --upgrade
+#     fi
+
+#     if [ ! -e /content/drive/MyDrive/envs/FEniCS ]
+#     then
+#         mkdir -p /content/drive/MyDrive/envs/FEniCS
+#     fi
+
+#     if [ -e /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz ]
+#     then
+
+#         cp -f /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz /content/
+#         tar -xzf fenics.tar.gz --strip-components=2 --directory=/usr/local
+
+#         ln -fs /usr/local/lib/libdolfin*.so* /usr/lib
+#         ln -fs /usr/local/lib/libmshr*.so* /usr/lib
+
+#     else
+#         FENICS_VERSION=$(python3 -c"import ffc; print(ffc.__version__)")
+
+#         cmd=$(ls /usr/lib | grep libdolfin)
+#         if [ "$cmd"x = x ]
+#         then
+#             # 14min 59s
+#             git clone --branch=$FENICS_VERSION https://bitbucket.org/fenics-project/dolfin
+#             mkdir dolfin/build && cd dolfin/build && cmake .. && make install && cd ../..
+#             cd dolfin/python && pip3 install . && cd ../..
+
+#             ln -fs /usr/local/lib/libdolfin*.so* /usr/lib
+#         fi
+
+#         cmd=$(ls /usr/lib | grep libmshr)
+#         if [ "$cmd"x = x ]
+#         then
+#             git clone --branch=2019.1.0 https://bitbucket.org/fenics-project/mshr
+#             mkdir mshr/build && cd mshr/build && cmake .. && make install && cd ../..
+#             cd mshr/python && pip3 install . && cd ../..
+
+#             ln -fs /usr/local/lib/libmshr*.so* /usr/lib
+#         fi
+
+#         if [ -e dolfin/build/install_manifest.txt ] && [ -e mshr/build/install_manifest.txt ] 
+#         then
+#             cat dolfin/build/install_manifest.txt | xargs tar -cf fenics.tar
+#             cat mshr/build/install_manifest.txt | xargs tar -rf fenics.tar
+#             tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/fenics
+#             tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/dolfin
+#             tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/dolfin_utils
+#             tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/fenics_dolfin*
+#             tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/mshr
+#             tar -rf fenics.tar /usr/local/lib/python3.7/dist-packages/mshr-*
+#             gzip fenics.tar
+#             if [ -e /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz ] && [ ! -e /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz_bak ] 
+#             then
+#                 mv /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz /content/drive/MyDrive/envs/FEniCS/fenics.tar.gz_bak
+#             fi
+#             mv fenics.tar.gz /content/drive/MyDrive/envs/FEniCS
+#         fi
+#     fi
 
 # 快速安装或恢复Julia+SciML环境库
 # !./install SciML
 # run(`./install SciML`)
 # 假设已经加载了谷歌硬盘，并已经存在目录/content/drive/MyDrive
-elif [ ! "$1"x == x ] && [ "$2"x == x ]
+elif [ ! "$1"x = x ] && [ "$2"x = x ]
 then
     # 确保安装了Julia基本环境 julia-1.6.5 【测试通过】
     cmd=$(which julia)
-    if [ "$cmd"x == x ]
+    if [ "$cmd"x = x ]
     then
         curl -sSL "https://julialang-s3.julialang.org/bin/linux/x64/1.6/julia-1.6.5-linux-x86_64.tar.gz" -o julia.tar.gz
         tar -xzf julia.tar.gz -C /usr --strip-components 1
@@ -220,7 +191,7 @@ then
     # 如果已经安装，但还没安装CmdStan
     # 务必先安装CmdStan
     cmd=$(julia -e 'using Pkg; Pkg.status()' | grep CmdStan)
-    if [ ! "$cmd"x == x ] && [ ! -d /root/.cmdstan/cmdstan-2.28.2 ]
+    if [ ! "$cmd"x = x ] && [ ! -d /root/.cmdstan/cmdstan-2.28.2 ]
     then
         InstallCmdStan
     fi
@@ -233,13 +204,13 @@ then
 # DifferentialEquations Plots BoundaryValueDiffEq DiffEqBase DiffEqCallbacks DiffEqPhysics OrdinaryDiffEq ParameterizedFunctions RecursiveArrayTools StochasticDiffEq ModelingToolkit SparseArrays SparseDiffTools Sundials SciMLBase Distributions Optim ForwardDiff StaticArrays Latexify NLsolve Unitful SymbolicUtils Symbolics LSODA NeuralPDE DiffEqFlux Flux CUDA DiffEqOperators KernelDensity DiffEqSensitivity Cuba Quadrature CmdStan DiffEqParamEstim AlgebraicMultigrid SparsityDetection BenchmarkTools DiffEqDevTools Catalyst DiffEqUncertainty NLopt DoubleFloats Decimals DecFP Measurements MCMCChains ArbNumerics Turing DynamicHMC TransformVariables DiffEqBayes DiffEqGPU StatsPlots
 # Gridap
 # Gridap add Gridap GridapGmsh GridapODEs ForwardDiff    
-elif [ ! "$1"x == x ] && [ "$2"x == addx ]
+elif [ ! "$1"x = x ] && [ "$2"x = addx ]
 then
     # 如果已经安装或即将安装，但还没安装CmdStan
     # 务必先安装CmdStan
     cmd1=$(echo ${@:3:$#} | grep CmdStan)
     cmd2=$(julia -e 'using Pkg; Pkg.status()' | grep CmdStan)
-    if [ ! "$cmd1"x == x -o ! "$cmd2"x == x ] && [ ! -d /root/.cmdstan/cmdstan-2.28.2 ]
+    if [ ! "$cmd1"x = x -o ! "$cmd2"x = x ] && [ ! -d /root/.cmdstan/cmdstan-2.28.2 ]
     then
         InstallCmdStan
     fi
@@ -251,7 +222,7 @@ then
     for pkg in ${@:3:$#}
     do
         cmd=$(echo ${pkgs_all} | grep ${pkg})
-        if [ "$cmd"x == x ] 
+        if [ "$cmd"x = x ] 
         then
             pkgs_add=$pkgs_add" "${pkg}
         fi
@@ -259,7 +230,7 @@ then
     # 去掉前后空格
     pkgs_add=$(echo ${pkgs_add} | awk '$1=$1')
     # 正式添加
-    if [ ! "$pkgs_add"x == x ]
+    if [ ! "$pkgs_add"x = x ]
     then
 
         # 添加新库包

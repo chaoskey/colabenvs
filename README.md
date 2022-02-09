@@ -52,14 +52,6 @@ drive.mount('/content/drive')
 ./install SciMLGridap add DifferentialEquations Plots BoundaryValueDiffEq DiffEqBase DiffEqCallbacks DiffEqPhysics OrdinaryDiffEq ParameterizedFunctions RecursiveArrayTools StochasticDiffEq ModelingToolkit SparseArrays SparseDiffTools Sundials SciMLBase Distributions Optim ForwardDiff StaticArrays Latexify NLsolve Unitful SymbolicUtils Symbolics LSODA NeuralPDE DiffEqFlux Flux CUDA DiffEqOperators KernelDensity DiffEqSensitivity Cuba Quadrature CmdStan DiffEqParamEstim AlgebraicMultigrid SparsityDetection BenchmarkTools DiffEqDevTools Catalyst DiffEqUncertainty NLopt DoubleFloats Decimals DecFP Measurements MCMCChains ArbNumerics Turing DynamicHMC TransformVariables DiffEqBayes DiffEqGPU StatsPlots Gridap GridapGmsh GridapODEs
 ```
 
-# FEniCS环境
-
-```shell
-# 如果已有FEniCS环境备份，安装耗时大概20-30秒
-# 如果没有FEniCS环境备份，安装耗时大概15-20分钟
-./install FEniCS
-```
-
 # 其它的环境
 
 详见: https://fem-on-colab.github.io/packages.html
@@ -67,6 +59,9 @@ drive.mount('/content/drive')
 我已将其集成为:
 
 ```shell
+# 1min 42s
+./install FEniCS
+
 # 2min 5s
 ./install FEniCSx real
 ./install FEniCSx complex
