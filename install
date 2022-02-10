@@ -43,15 +43,28 @@ then
     if [ ! "$cmd"x = "$mode"x ]
     then
         type=""
-        if [ "${2,,}"x = realx ] || [ "${2,,}"x = complexx ]
+        if [ "${1,,}"x = fenicsxx ] -o [ "${1,,}"x = firedrakex ] && [ "${2,,}"x = x ]
+        then
+            type="-real"
+        elif [ "${2,,}"x = realx ] || [ "${2,,}"x = complexx ]
         then
             type=-"${2,,}"
         fi
-        echo -$1
-        echo -$mode
-        echo -$type
         wget "https://fem-on-colab.github.io/releases/"${1,,}"-install"$type".sh" -O "/tmp/"${1,,}"-install.sh" && bash "/tmp/"${1,,}"-install.sh"
     fi
+
+    if [ "${1,,}"x = fenicsxx ]
+    then
+        cmd=$(python3 -c"import pyvista; print('pyvista')")
+        if [ ! "$cmd"x = pyvistax ] 
+        then
+            # 为交互式绘图设置环境
+            # https://github.com/pyvista/pyvista/issues/313
+            pip install -q piglet pyvirtualdisplay pyvista 
+            apt-get -qq install xvfb
+        fi
+    fi
+
 # https://fem-on-colab.github.io 已实现，屏蔽这段代码
 # elif [ "$1"x == fenicsx ]
 # then
@@ -299,5 +312,5 @@ fi
 
 end_time=$(date +%s)
 cost_time=$[ $end_time-$start_time ]
-echo "安装耗时: $(($cost_time/60))min $(($cost_time%60))s"
+echo "安装耗时: $(($cost_time/60)) 分 $(($cost_time%60)) 秒"
 

@@ -24,6 +24,7 @@ drive.mount('/content/drive')
 
 ```shell
 # Gridap初始化安装 或者 已构建环境的恢复
+# 如果有Gridap环境备份，安装耗时大概 0 分 39 秒
 ./install Gridap
 
 # 完整的Gridap环境构建【务必在上一步的基础上添加】
@@ -59,21 +60,24 @@ drive.mount('/content/drive')
 我已将其集成为:
 
 ```shell
-# 1min 42s
+
+# 1 分 42 秒
 ./install FEniCS
 
-# 2min 5s
+# 2 分 14 秒
+./install FEniCSx  # 默认real模式
 ./install FEniCSx real
 ./install FEniCSx complex
 
-# 1min 48s
+# 2 分 48 秒
+./install firedrake  # 默认real模式
 ./install firedrake real
 ./install firedrake complex
 
 # 0min 38s
 ./install gmsh
 
-# 1min 52s
+# 2 分 46 秒
 ./install ngsolve
 ```
 
